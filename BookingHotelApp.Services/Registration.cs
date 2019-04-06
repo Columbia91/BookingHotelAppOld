@@ -1,10 +1,7 @@
-﻿using BookingHotelApp.Models;
+﻿using BookingHotelApp.DataAccess;
+using BookingHotelApp.Models;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using Twilio;
 using Twilio.Rest.Api.V2010.Account;
 
@@ -12,6 +9,39 @@ namespace BookingHotelApp.Services
 {
     public class Registration
     {
+        public static void SignUp(User user, AccountsTableDataService dataService)
+        {
+            EnterLogin(user);
+            EnterPassword(user);
+            ConfirmPassword(user);
+            EnterEmail(user);
+            EnterPhoneNumber(user);
+
+            string adoptedCode = Registration.VerificationAccount();
+
+            System.Console.WriteLine("\nМы отправили на указанный Вами номер код верификации, введите его ниже...");
+
+            while (true)
+            {
+                System.Console.Write("\nКод подтверждения: ");
+                string verificationCode = System.Console.ReadLine();
+                if (verificationCode == adoptedCode)
+                {
+                    System.Console.Clear();
+                    dataService.AddUser(user);
+                    System.Console.WriteLine("Поздравляем! Вы успешно прошли регистрацию");
+                    break;
+                }
+                else
+                {
+                    System.Console.WriteLine("Неверный код верификации, нажмите Enter чтобы ввести заново...");
+                    System.Console.ReadKey();
+                    System.Console.Clear();
+                    Registration.Show(user, 5, Registration.GiveMeStars(user), Registration.GiveMeStars(user));
+                }
+            }
+        }
+
         #region Вывод на консоль
         public static void Show(User user, int numb, string stars = "", string stars2 = "")
         {
@@ -58,6 +88,13 @@ namespace BookingHotelApp.Services
             if (user.Login.Length < MIN_LOGIN_LENGTH)
             {
                 Console.WriteLine("Логин слишком короткий, нажмите Enter чтобы ввести заново...");
+                user.Login = "";
+                Console.ReadKey();
+                EnterLogin(user);
+            }
+            if (AccountsTableDataService.CheckForAvailability("Login", user.Login))
+            {
+                Console.WriteLine("Логин уже занят, нажмите Enter чтобы ввести заново...");
                 user.Login = "";
                 Console.ReadKey();
                 EnterLogin(user);
@@ -134,6 +171,13 @@ namespace BookingHotelApp.Services
                 Console.ReadKey();
                 EnterEmail(user);
             }
+            if (AccountsTableDataService.CheckForAvailability("Email", user.Email))
+            {
+                Console.WriteLine("Данная почта уже существует в базе данных, нажмите Enter чтобы ввести заново...");
+                user.Email = "";
+                Console.ReadKey();
+                EnterEmail(user);
+            }
         }
         #endregion
 
@@ -156,11 +200,18 @@ namespace BookingHotelApp.Services
                 Console.ReadKey();
                 EnterPhoneNumber(user);
             }
+            if (AccountsTableDataService.CheckForAvailability("PhoneNumber", user.PhoneNumber))
+            {
+                Console.WriteLine("Номер уже использовался, нажмите Enter чтобы ввести заново...");
+                user.PhoneNumber = "";
+                Console.ReadKey();
+                EnterPhoneNumber(user);
+            }
         }
         #endregion
 
         #region Верификация аккаунта
-        public static string VerificationAccount(User user)
+        public static string VerificationAccount()
         {
             // Find your Account Sid and Token at twilio.com/console
             const string accountSid = "AC9dc0d107f661a29db6e2db341af2beb4";
@@ -174,7 +225,7 @@ namespace BookingHotelApp.Services
             var message = MessageResource.Create(
                 from: new Twilio.Types.PhoneNumber("+18432585652"),
                 body: code,
-                to: new Twilio.Types.PhoneNumber(user.PhoneNumber) // user.PhoneNumber
+                to: new Twilio.Types.PhoneNumber("+77719777518") // user.PhoneNumber
             );
 
             // Console.WriteLine(message.Sid);

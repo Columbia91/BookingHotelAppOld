@@ -7,12 +7,13 @@ namespace BookingHotelApp.DataAccess
 {
     public class AccountsTableDataService
     {
-        private readonly string _connectionString;
-        public AccountsTableDataService()
+        private static readonly string _connectionString;
+        static AccountsTableDataService()
         {
             _connectionString = @"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=C:\Users\ADILET\Source\Repos\BookingHotelApp2\BookingHotelApp.DataAccess\Database.mdf;Integrated Security=True";
         }
 
+        #region Получить коллекцию всех пользователей
         public List<User> GetAllUsers()
         {
             var data = new List<User>(); //буферный список пользователей
@@ -59,7 +60,9 @@ namespace BookingHotelApp.DataAccess
             }
             return data;
         }
+        #endregion
 
+        #region Добавление пользователя в базу данных
         public void AddUser(User user)
         {
             using (var connection = new SqlConnection(_connectionString))
@@ -92,15 +95,52 @@ namespace BookingHotelApp.DataAccess
                 }
             }
         }
+        #endregion
 
+        #region Удаление пользователя по ID
         public void DeleteUserById(int id)
         {
 
         }
+        #endregion
 
+        #region Изменение таблицы
         public void UpdateUser(User user)
         {
 
         }
+        #endregion
+
+        #region Проверка на доступность введенных данных
+        public static bool CheckForAvailability(string property, object data)
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            using (var command = connection.CreateCommand())
+            {
+                try
+                {
+                    connection.Open();
+                    command.CommandText = $"Select * from Accounts where {property} = '{data}'";
+
+                    if(command.ExecuteScalar() == null)
+                        return false;
+                }
+                catch (SqlException exception)
+                {
+                    Console.WriteLine(exception.Message);
+                    //TODO обработка ошибки
+                    //throw;
+                }
+                catch (Exception exception)
+                {
+                    Console.WriteLine(exception.Message);
+                    //TODO обработка ошибки
+                    //throw;
+                    Console.ReadLine();
+                }
+            }
+            return true;
+        }
+        #endregion
     }
 }
